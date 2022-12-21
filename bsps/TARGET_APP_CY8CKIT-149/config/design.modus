@@ -13,7 +13,7 @@
                     <Personality template="m0s8dmac" version="1.0">
                         <Param id="CHANNEL_PRIORITY" value="3"/>
                         <Param id="DESCR_SELECTION" value="CY_DMAC_DESCRIPTOR_PING"/>
-                        <Param id="DESCR_PING_DATA_CNT" value="251"/>
+                        <Param id="DESCR_PING_DATA_CNT" value="256"/>
                         <Param id="DESCR_PING_DATA_TRANSFER_WIDTH" value="WordToWord"/>
                         <Param id="DESCR_PING_SRC_INCREMENT" value="true"/>
                         <Param id="DESCR_PING_DST_INCREMENT" value="false"/>
@@ -97,12 +97,32 @@
                         <Param id="portLevelConfig" value="false"/>
                     </Personality>
                 </Block>
+                <Block location="ioss[0].port[2].pin[6]">
+                    <Personality template="m0s8pin" version="2.0">
+                        <Param id="DriveModes" value="CY_GPIO_DM_STRONG_IN_OFF"/>
+                        <Param id="initialState" value="1"/>
+                        <Param id="vtrip" value="CY_GPIO_VTRIP_CMOS"/>
+                        <Param id="isrTrigger" value="CY_GPIO_INTR_DISABLE"/>
+                        <Param id="slewRate" value="CY_GPIO_SLEW_FAST"/>
+                        <Param id="inFlash" value="true"/>
+                        <Param id="portLevelConfig" value="false"/>
+                    </Personality>
+                </Block>
                 <Block location="ioss[0].port[2].pin[7]">
                     <Alias value="CYBSP_CSD_SLD0"/>
                     <Alias value="CYBSP_CS_SLD0"/>
                 </Block>
                 <Block location="ioss[0].port[3].pin[0]">
                     <Alias value="CYBSP_I2C_SCL"/>
+                    <Personality template="m0s8pin" version="2.0">
+                        <Param id="DriveModes" value="CY_GPIO_DM_STRONG_IN_OFF"/>
+                        <Param id="initialState" value="1"/>
+                        <Param id="vtrip" value="CY_GPIO_VTRIP_CMOS"/>
+                        <Param id="isrTrigger" value="CY_GPIO_INTR_DISABLE"/>
+                        <Param id="slewRate" value="CY_GPIO_SLEW_FAST"/>
+                        <Param id="inFlash" value="true"/>
+                        <Param id="portLevelConfig" value="false"/>
+                    </Personality>
                 </Block>
                 <Block location="ioss[0].port[3].pin[1]">
                     <Alias value="CYBSP_I2C_SDA"/>
@@ -234,20 +254,6 @@
                     <Alias value="ADC"/>
                     <Personality template="m0s8sysanalog" version="1.0">
                         <Param id="clock" value="CY_CTB_CLK_PUMP_HF_DIV_2"/>
-                    </Personality>
-                </Block>
-                <Block location="pass[0].ctb[0]">
-                    <Personality template="m0s8ctbm" version="1.0">
-                        <Param id="deepSleep" value="false"/>
-                        <Param id="inFlash" value="true"/>
-                    </Personality>
-                </Block>
-                <Block location="pass[0].ctb[0].oa[0]">
-                    <Personality template="m0s8follower" version="1.0">
-                        <Param id="power" value="CY_CTB_POWER_LOW"/>
-                        <Param id="pump" value="true"/>
-                        <Param id="outputCurrent" value="CY_CTB_MODE_OPAMP_INTERNAL"/>
-                        <Param id="inFlash" value="true"/>
                     </Personality>
                 </Block>
                 <Block location="pass[0].sar[0]">
@@ -391,7 +397,7 @@
                     <Personality template="m0s8peripheralclock" version="1.0">
                         <Param id="calc" value="man"/>
                         <Param id="desFreq" value="48000000.000000"/>
-                        <Param id="intDivider" value="8"/>
+                        <Param id="intDivider" value="48"/>
                         <Param id="fracDivider" value="0"/>
                         <Param id="startOnReset" value="true"/>
                     </Personality>
@@ -438,6 +444,9 @@
                         <Param id="AmuxPumpEn" value="false"/>
                     </Personality>
                 </Block>
+                <Block location="tcpwm[0].cnt[0]">
+                    <Alias value="USER_PWM_1"/>
+                </Block>
                 <Block location="tcpwm[0].cnt[2]">
                     <Alias value="USER_PWM"/>
                     <Personality template="m0s8pwm" version="1.0">
@@ -450,7 +459,7 @@
                         <Param id="Period0" value="65535"/>
                         <Param id="Period1" value="32768"/>
                         <Param id="EnableCompareSwap" value="false"/>
-                        <Param id="Compare0" value="0"/>
+                        <Param id="Compare0" value="2048"/>
                         <Param id="Compare1" value="16384"/>
                         <Param id="InterruptSource" value="CY_TCPWM_INT_NONE"/>
                         <Param id="CountInput" value="CY_TCPWM_INPUT_DISABLED"/>
@@ -501,10 +510,6 @@
                 <Net>
                     <Port name="ioss[0].port[3].pin[4].digital_out[0]"/>
                     <Port name="tcpwm[0].cnt[2].line[0]"/>
-                </Net>
-                <Net>
-                    <Port name="pass[0].ctb[0].oa[0].out_1x[0]"/>
-                    <Port name="pass[0].ctb[0].oa[0].vplus[0]"/>
                 </Net>
                 <Net>
                     <Port name="pass[0].sar[0].clock_sar[0]"/>
