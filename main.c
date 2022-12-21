@@ -55,13 +55,23 @@
 ********************************************************************************/
 #define USER_PWM_CNT             ((TCPWM_CNT_Type*) &USER_PWM_HW->CNT[USER_PWM_NUM])
 #define CHANN_NUM                (0UL)
-#define ARRAY_SIZE               (256u)
-#define BREATHING_CHANGE         (512u)
+
+#define TIMER_PERIOD_MSEC   	 10U
+
+/*******************************************************************************
+* Function Prototypes
+********************************************************************************/
+/*******************************************************************************
+* Global Variables
+********************************************************************************/
+
+/* Variable for storing ADC data */
+int16_t adcResult0;
 
 
-
-
-const uint32_t sine[] = {
+/* This array holds 256 table values that will be loaded onto the PWM through DMA
+*  to create sine wave */
+const uint32_t sine_table[] = {
 	0x8000,0x8324,0x8647,0x896a,0x8c8b,0x8fab,0x92c7,0x95e1,
 	0x98f8,0x9c0b,0x9f19,0xa223,0xa527,0xa826,0xab1f,0xae10,
 	0xb0fb,0xb3de,0xb6b9,0xb98c,0xbc56,0xbf17,0xc1cd,0xc47a,
@@ -96,59 +106,16 @@ const uint32_t sine[] = {
 	0x6707,0x6a1e,0x6d38,0x7054,0x7374,0x7695,0x79b8,0x7cdb,
 };
 
-
-
-#define TIMER_PERIOD_MSEC   10U
-
-/*******************************************************************************
-* Function Prototypes
-********************************************************************************/
-void arrayInit(void);
-
-/*******************************************************************************
-* Global Variables
-********************************************************************************/
-int16_t adcResult0;
-/* This array holds all the compare values that will be loaded onto the PWM
-*  to create the breathing pattern */
-uint32_t compareVal[ARRAY_SIZE];
-
-
-
 void timer_interrupt_handler(void)
 {
     /* Clear the terminal count interrupt */
     Cy_TCPWM_ClearInterrupt(USER_TIMER_HW, USER_TIMER_NUM, CY_TCPWM_INT_ON_TC );
 
-    /* Toggle the LED */
-    //Cy_GPIO_Inv(CYBSP_USER_LED1_PORT, CYBSP_USER_LED1_NUM);
-
     /* Start the continuous conversion */
 	Cy_SAR_StartConvert(SAR0, CY_SAR_START_CONVERT_SINGLE_SHOT);
 
-
-	//Cy_TCPWM_PWM_SetCompare0(USER_PWM_HW, USER_PWM_NUM, sine[i]);
-
 }
-/*******************************************************************************
-* Function Name: main
-********************************************************************************
-* Summary:
-* This is the main function for CM0 Plus CPU. It does the following functions -
-*    1. Generate the compare array
-*    2. Initialize and enable the PWM block
-*    3. Connect PWM overflow output trigger to DMA input trigger
-*    4. Set DMA ping descriptor source address as the compare array
-*    5. Set DMA ping descriptor destination as TCPWM compare register
-*    6. Initialize and enable the DMA channel and DMA block
-*
-* Parameters:
-*  void
-*
-* Return:
-*  int
-*
-*******************************************************************************/
+
 int main(void)
 {
     cy_rslt_t result;
@@ -175,7 +142,6 @@ int main(void)
     /* Enable Interrupt */
     NVIC_EnableIRQ(intrCfg.intrSrc);
 
-
     /* Initialize retarget-io to use the debug UART port */
     result = cy_retarget_io_init(CYBSP_DEBUG_UART_TX, CYBSP_DEBUG_UART_RX,
            CY_RETARGET_IO_BAUDRATE);
@@ -190,9 +156,6 @@ int main(void)
 	}
 	/* Enable the SAR ADC */
 	Cy_SAR_Enable(SAR0);
-
-    /* Initialize the compareVal array */
-    arrayInit();
 
     /* Enable global interrupts */
     __enable_irq();
@@ -210,8 +173,8 @@ int main(void)
     Cy_TCPWM_TriggerReloadOrIndex(USER_PWM_HW, USER_PWM_MASK);
 
 
-    /* Configure DMA Descriptor to change the PWM compare value per breathingLed array */
-    USER_DMA_ping_config.srcAddress = &sine[0];//&compareVal[0];
+    /* Configure DMA Descriptor to change the PWM compare value per sine array */
+    USER_DMA_ping_config.srcAddress = sine_table;
     USER_DMA_ping_config.dstAddress = (void *) &(USER_PWM_CNT->CC);
     /* Initialize the ping descriptor for channel 0 */
     if (CY_DMAC_SUCCESS != Cy_DMAC_Descriptor_Init(DMAC, CHANN_NUM, CY_DMAC_DESCRIPTOR_PING, &USER_DMA_ping_config))
@@ -257,12 +220,9 @@ int main(void)
 	 */
 	Cy_TCPWM_TriggerStart(USER_TIMER_HW, USER_TIMER_MASK);
 
-
+	/* Print message */
+	/* \x1b[2J\x1b[;H - ANSI ESC sequence for clear screen */
     printf("\x1b[2J\x1b[;H");
-    printf("-----------------------------------------------------------\r\n");
-    printf("*****START******\r\n");
-    printf("-----------------------------------------------------------\r\n\n");
-
 
     for (;;)
     {
@@ -270,40 +230,8 @@ int main(void)
     	Cy_SAR_IsEndConversion(SAR0, CY_SAR_WAIT_FOR_RESULT);
     	/* Get the result from Input 0 */
     	adcResult0 = Cy_SAR_GetResult16(SAR0, 0);
-
+    	/* Print ADC result in serial port */
     	printf("%d\r\n", Cy_SAR_CountsTo_mVolts(SAR0, 0, adcResult0));
-    }
-}
-
-/*******************************************************************************
-* Function Name: arrayInit
-********************************************************************************
-* Summary:
-* This function creates an array with increasing and decreasing compare values to
-* generate the breathing effect.
-*
-* Parameters:
-*  void
-*
-* Return:
-*  void
-*
-*******************************************************************************/
-void arrayInit(void)
-{
-    uint32_t i=0u;
-    /* Creating the array with increasing and decreasing compare value to generate the breathing */
-    compareVal[i] = 0;
-
-    for(i=1u; i < ARRAY_SIZE>>1; i++)
-    {
-        /* Increase compare values */
-        compareVal[i] = compareVal[i-1u] + BREATHING_CHANGE;
-    }
-    for(i=(ARRAY_SIZE>>1); i < ARRAY_SIZE; i++)
-    {
-        /* Decrease compare value */
-        compareVal[i] = compareVal[i-1u] - BREATHING_CHANGE;
     }
 }
 
