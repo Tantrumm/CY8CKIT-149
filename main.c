@@ -1,8 +1,9 @@
 /******************************************************************************
 * File Name:   main.c
 *
-* Description: This is the source code for the CE231732 PSoC 4 MCU: PWM
-*              triggering a DMA Channel Example for ModusToolbox.
+* Description: This is the source code for the CE231732 PSoC 4 MCU: PWM based
+* 			   Sine wave generator with analog to digital conversion of generated
+* 			   signal to print ADC result in UART.
 *
 * Related Document: See README.md
 *
@@ -70,7 +71,7 @@ int16_t adcResult0;
 
 
 /* This array holds 256 table values that will be loaded onto the PWM through DMA
-*  to create sine wave */
+*  to create 1 period of sine wave */
 const uint32_t sine_table[] = {
 	0x8000,0x8324,0x8647,0x896a,0x8c8b,0x8fab,0x92c7,0x95e1,
 	0x98f8,0x9c0b,0x9f19,0xa223,0xa527,0xa826,0xab1f,0xae10,
@@ -104,18 +105,56 @@ const uint32_t sine_table[] = {
 	0x38e3,0x3b85,0x3e32,0x40e8,0x43a9,0x4673,0x4946,0x4c21,
 	0x4f04,0x51ef,0x54e0,0x57d9,0x5ad8,0x5ddc,0x60e6,0x63f4,
 	0x6707,0x6a1e,0x6d38,0x7054,0x7374,0x7695,0x79b8,0x7cdb,
+
 };
+
+
+/*******************************************************************************
+* Function Name: Timer_Interrupt_Handler
+********************************************************************************
+* Summary:
+* Handler function for the timer interrupt, which is called every TIMER_PERIOD_MSEC
+* to start ADC conversion.
+*
+* Parameters:
+*  None
+*
+* Return:
+*  None
+*
+*******************************************************************************/
 
 void timer_interrupt_handler(void)
 {
     /* Clear the terminal count interrupt */
-    Cy_TCPWM_ClearInterrupt(USER_TIMER_HW, USER_TIMER_NUM, CY_TCPWM_INT_ON_TC );
+    Cy_TCPWM_ClearInterrupt(USER_TIMER_HW, USER_TIMER_NUM, CY_TCPWM_INT_ON_TC);
 
     /* Start the continuous conversion */
 	Cy_SAR_StartConvert(SAR0, CY_SAR_START_CONVERT_SINGLE_SHOT);
 
 }
 
+/*******************************************************************************
+* Function Name: main
+********************************************************************************
+* Summary:
+* This is the main function. It does the following functions -
+*    1. Initialize debug UART
+*    2. Initialize and enable the SAR ADC
+*    3. Configure periodic conversions for measuring input voltage
+*    4. Initialize and enable the PWM block
+*    5. Connect PWM overflow output trigger to DMA input trigger
+*    6. Set DMA ping descriptor source address as the compare array
+*    7. Set DMA ping descriptor destination as TCPWM compare register
+*    8. Initialize and enable the DMA channel and DMA block
+*
+* Parameters:
+*  void
+*
+* Return:
+*  int
+*
+*******************************************************************************/
 int main(void)
 {
     cy_rslt_t result;
@@ -230,7 +269,7 @@ int main(void)
     	Cy_SAR_IsEndConversion(SAR0, CY_SAR_WAIT_FOR_RESULT);
     	/* Get the result from Input 0 */
     	adcResult0 = Cy_SAR_GetResult16(SAR0, 0);
-    	/* Print ADC result in serial port */
+    	/* Print ADC result in UART*/
     	printf("%d\r\n", Cy_SAR_CountsTo_mVolts(SAR0, 0, adcResult0));
     }
 }
